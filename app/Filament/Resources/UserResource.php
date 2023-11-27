@@ -19,12 +19,8 @@ use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
-
-<<<<<<< HEAD
-    protected static ?string $navigationIcon = 'fab-windows';
-=======
+    
     protected static ?string $navigationIcon = 'heroicon-o-users';
->>>>>>> fbc5ae3047332053c21dadf6b7e2f82a3f6c38f3
     protected static ?string $navigationGroup = 'Settings';
     protected static ?int $navigationSort = 1;
 

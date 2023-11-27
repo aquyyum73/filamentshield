@@ -16,8 +16,9 @@ use Illuminate\Support\Facades\Auth;
 use PhpParser\Node\Expr\Cast\String_;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Filament\Models\Contracts\HasAvatar;
 
-class User extends Authenticatable implements FilamentUser, HasMedia
+class User extends Authenticatable implements FilamentUser, HasMedia, HasAvatar
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles, HasPanelShield, InteractsWithMedia;
 
@@ -62,4 +63,9 @@ class User extends Authenticatable implements FilamentUser, HasMedia
     {
         return $this->roles->pluck('name')->join(',');
     }
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->avatar_url;
+    }
+    
 }
