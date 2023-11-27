@@ -168,7 +168,10 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\Filament\AdminPanelProvider::class,
+<<<<<<< HEAD
         App\Providers\Filament\SuperAdminPanelProvider::class,
+=======
+>>>>>>> fbc5ae3047332053c21dadf6b7e2f82a3f6c38f3
         App\Providers\RouteServiceProvider::class,
     ])->toArray(),
 
