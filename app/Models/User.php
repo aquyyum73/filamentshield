@@ -11,9 +11,7 @@ use Spatie\Permission\Traits\HasRoles;
 use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use PhpParser\Node\Expr\Cast\String_;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Filament\Models\Contracts\HasAvatar;
@@ -63,9 +61,13 @@ class User extends Authenticatable implements FilamentUser, HasMedia, HasAvatar
     {
         return $this->roles->pluck('name')->join(',');
     }
+
     public function getFilamentAvatarUrl(): ?string
     {
-        return $this->avatar_url;
+        // Replace 'avatar' with the actual media collection name for avatars
+        $media = $this->getFirstMedia('users');
+
+        return $media ? $media->getUrl() : null;
     }
     
 }

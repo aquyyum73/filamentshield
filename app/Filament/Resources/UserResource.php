@@ -24,6 +24,11 @@ class UserResource extends Resource
     protected static ?string $navigationGroup = 'Settings';
     protected static ?int $navigationSort = 1;
 
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::count();
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -67,7 +72,14 @@ class UserResource extends Resource
                     ->label('User Picture')
                     ->collection('users')
                     ->circular()
-                    ->size(60),
+                    ->size(60)
+                    ->default(function ($record) {
+                        if ($record->avatar_url) {
+                            return $record->avatar_url;
+                        } else {
+                            return $record->getFilamentAvatarUrl();
+                        }
+                    }),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
