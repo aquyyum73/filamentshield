@@ -17,6 +17,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Support\Enums\MaxWidth;
+use Spatie\Activitylog\Models\Activity;
 
 class SuperAdminPanelProvider extends PanelProvider
 {
@@ -29,6 +31,8 @@ class SuperAdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->spa()
+            ->maxContentWidth(MaxWidth::Full)
             ->domain('sadmin.localhost')
             ->discoverResources(in: app_path('Filament/SuperAdmin/Resources'), for: 'App\\Filament\\SuperAdmin\\Resources')
             ->discoverPages(in: app_path('Filament/SuperAdmin/Pages'), for: 'App\\Filament\\SuperAdmin\\Pages')
@@ -63,6 +67,9 @@ class SuperAdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+            ])
+            ->resources([
+                config('filament-logger.activity_resource')
             ]);
     }
 }
