@@ -31,7 +31,7 @@ class EditRole extends EditRecord
             ->values()
             ->flatten();
 
-        return Arr::only($data, ['name', 'guard_name']);
+        return Arr::only($data, ['name', 'guard_name', 'level']);
     }
 
     protected function afterSave(): void

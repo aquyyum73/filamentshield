@@ -7,8 +7,8 @@ return [
         'navigation_sort' => 2, //replace integer value from -1 to desired value to be viewed in sorted MenuItem
         'navigation_badge' => true,
         'navigation_group' => false, //default value is true should be changed to false if we want to put in the customized Navigation Group
-        'is_globally_searchable' => false,
-        'show_model_path' => true,
+        'is_globally_searchable' => true,
+        'show_model_path' => false,
         'is_scoped_to_tenant' => true,
     ],
 
@@ -24,7 +24,7 @@ return [
     ],
 
     'panel_user' => [
-        'enabled' => true,
+        'enabled' => false,
         'name' => 'panel_user',
     ],
 

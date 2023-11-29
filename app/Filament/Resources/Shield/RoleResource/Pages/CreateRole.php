@@ -23,7 +23,7 @@ class CreateRole extends CreateRecord
             ->values()
             ->flatten();
 
-        return Arr::only($data, ['name', 'guard_name']);
+        return Arr::only($data, ['name', 'guard_name', 'level']);
     }
 
     protected function afterCreate(): void

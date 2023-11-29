@@ -55,6 +55,9 @@ class RoleResource extends Resource implements HasShieldPermissions
                                     ->default(Utils::getFilamentAuthGuard())
                                     ->nullable()
                                     ->maxLength(255),
+                                Forms\Components\TextInput::make('level')
+                                    ->nullable()
+                                    ->type('number'),
                                 Forms\Components\Toggle::make('select_all')
                                     ->onIcon('heroicon-s-shield-check')
                                     ->offIcon('heroicon-s-shield-exclamation')
@@ -215,6 +218,9 @@ class RoleResource extends Resource implements HasShieldPermissions
                 Tables\Columns\TextColumn::make('guard_name')
                     ->badge()
                     ->label(__('filament-shield::filament-shield.column.guard_name')),
+                Tables\Columns\TextColumn::make('level')
+                    ->badge()
+                    ->colors(['primary']),
                 Tables\Columns\TextColumn::make('permissions_count')
                     ->badge()
                     ->label(__('filament-shield::filament-shield.column.permissions'))
