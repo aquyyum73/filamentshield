@@ -93,11 +93,12 @@ class UserResource extends Resource implements HasShieldPermissions
                     ->collection('users')
                     ->circular()
                     ->size(60)
-                    ->default(function ($record) {
+                    ->defaultImageUrl(url('/storage/sample.png'))
+                    ->defaultImageUrl(function ($record) {
                         if ($record->avatar_url) {
                             return $record->avatar_url;
                         } else {
-                            return $record->getFilamentAvatarUrl();
+                            return $record->getFilamentAvatarUrl() ?? asset('/storage/sample.png');
                         }
                     }),
                 Tables\Columns\TextColumn::make('name')
