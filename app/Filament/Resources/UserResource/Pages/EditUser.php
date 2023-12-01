@@ -11,6 +11,12 @@ class EditUser extends EditRecord
 
     protected static string $resource = UserResource::class;
 
+    protected function getRedirectUrl(): string
+    {
+        $user = $this->record;
+        return $this->getResource()::getUrl('index');
+    }
+
     protected function getHeaderActions(): array
     {
         return [

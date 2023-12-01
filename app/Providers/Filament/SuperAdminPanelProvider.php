@@ -19,6 +19,9 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Support\Enums\MaxWidth;
 use Spatie\Activitylog\Models\Activity;
+use pxlrbt\FilamentSpotlight\SpotlightPlugin;
+use Awcodes\FilamentQuickCreate\QuickCreatePlugin;
+use Njxqlus\FilamentProgressbar\FilamentProgressbarPlugin;
 
 class SuperAdminPanelProvider extends PanelProvider
 {
@@ -48,10 +51,17 @@ class SuperAdminPanelProvider extends PanelProvider
                 Widgets\FilamentInfoWidget::class,
             ])
             ->plugin(
-                \Hasnayeen\Themes\ThemesPlugin::make()
+                \Hasnayeen\Themes\ThemesPlugin::make(),
             )
             ->plugins([
-                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
+                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
+                QuickCreatePlugin::make()
+                    ->sort(false)
+                    ->excludes([
+                        \Z3d0X\FilamentLogger\Resources\ActivityResource::class,
+                    ])
+                    ->slideOver(),
+                SpotlightPlugin::make()
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -19,6 +19,9 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Support\Enums\MaxWidth;
 use App\Filament\Pages\Auth\EditProfile;
+use pxlrbt\FilamentSpotlight\SpotlightPlugin;
+use Awcodes\FilamentQuickCreate\QuickCreatePlugin;
+use Njxqlus\FilamentProgressbar\FilamentProgressbarPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -47,10 +50,18 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\FilamentInfoWidget::class,
             ])
             ->plugin(
-                \Hasnayeen\Themes\ThemesPlugin::make()
+                \Hasnayeen\Themes\ThemesPlugin::make(),
+                
             )
             ->plugins([
-                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make()
+                \BezhanSalleh\FilamentShield\FilamentShieldPlugin::make(),
+                QuickCreatePlugin::make()
+                    ->excludes([
+                        \Z3d0X\FilamentLogger\Resources\ActivityResource::class,
+                    ])
+                    ->sort(false)
+                    ->slideOver(),
+                SpotlightPlugin::make()
             ])
             ->middleware([
                 EncryptCookies::class,

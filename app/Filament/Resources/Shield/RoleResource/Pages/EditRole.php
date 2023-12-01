@@ -13,6 +13,12 @@ class EditRole extends EditRecord
 {
     protected static string $resource = RoleResource::class;
 
+    protected function getRedirectUrl(): string
+    {
+        $user = $this->record;
+        return $this->getResource()::getUrl('index');
+    }
+
     public Collection $permissions;
 
     protected function getActions(): array
