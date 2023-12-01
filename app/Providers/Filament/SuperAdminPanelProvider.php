@@ -31,12 +31,24 @@ class SuperAdminPanelProvider extends PanelProvider
             ->id('super-admin')
             ->path('super-admin')
             ->login()
+            ->breadcrumbs(false)
             ->colors([
                 'primary' => Color::Amber,
             ])
             ->spa()
             ->maxContentWidth(MaxWidth::Full)
             ->domain('sadmin.localhost')
+            ->navigationGroups([
+                'Events',
+                'Payables',
+                'Receivables',
+                'Vendors',
+                'Store',
+                'HRM',
+                'Items',
+                'Reports',
+                'Settings',
+            ])
             ->discoverResources(in: app_path('Filament/SuperAdmin/Resources'), for: 'App\\Filament\\SuperAdmin\\Resources')
             ->discoverPages(in: app_path('Filament/SuperAdmin/Pages'), for: 'App\\Filament\\SuperAdmin\\Pages')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

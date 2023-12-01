@@ -34,10 +34,22 @@ class AdminPanelProvider extends PanelProvider
             ->login()
             ->profile(EditProfile::class)
             ->brandName('Filament Shield')
+            ->breadcrumbs(false)
             ->colors([
                 'primary' => Color::Indigo,
             ])
             ->spa()
+            ->navigationGroups([
+                'Events',
+                'Payables',
+                'Receivables',
+                'Vendors',
+                'Store',
+                'HRM',
+                'Items',
+                'Reports',
+                'Settings',
+            ])
             ->maxContentWidth(MaxWidth::Full)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
