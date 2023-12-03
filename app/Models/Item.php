@@ -36,6 +36,8 @@ class Item extends Model
         return $this->belongsToMany(Vendor::class);
     }
 
+    
+
     // public function getVendorNameAttribute() : String
     // {
     //     return $this->vendors->pluck('name')->join(',');
