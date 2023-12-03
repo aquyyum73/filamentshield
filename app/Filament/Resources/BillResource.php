@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use layout;
 use Filament\Forms;
 use App\Models\Bill;
 use App\Models\Item;
@@ -11,15 +12,25 @@ use App\Enums\BillStatus;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
 use Filament\Facades\Filament;
+use Illuminate\Support\Carbon;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
+use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Wizard;
-use Filament\Forms\Components\Builder;
-use Filament\Forms\Components\Section;
+use Filament\Support\Enums\FontWeight;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
+use Filament\Infolists\Components\Grid;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\Split;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Database\Eloquent\Builder;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Forms\Components\MarkdownEditor;
 use App\Filament\Resources\BillResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -37,7 +48,7 @@ class BillResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::count();
+        return static::$model::where('status', 'pending')->count();
     }
 
     public static function form(Form $form): Form
@@ -47,9 +58,9 @@ class BillResource extends Resource
                 Wizard::make([
                     Wizard\Step::make('Bill Details')
                         ->schema([
-                            Section::make('Bill Information')
+                            Forms\Components\Section::make('Bill Information')
                                 ->schema([
-                                    TextInput::make('number')
+                                    Forms\Components\TextInput::make('number')
                                         ->label('Bill Number')
                                         ->default(function () {
                                             return 'BILL-' . now()->format('M-Y') . '-' . random_int(100000, 999999);
@@ -104,7 +115,7 @@ class BillResource extends Resource
                                                 ->maxLength(16777215)
                                                 ->columnSpanFull(),
                                         ]),
-                                    DatePicker::make('bill_date')
+                                    Forms\Components\DatePicker::make('bill_date')
                                         ->native(false)
                                         ->displayFormat('d-M-Y')
                                         ->closeOnDateSelection(),
@@ -113,13 +124,13 @@ class BillResource extends Resource
                                         ->required()
                                         ->native(false),
                                 ])->columns(3),
-                            Section::make('Special Notes')
+                            Forms\Components\Section::make('Special Notes')
                                 ->schema([
                                     MarkdownEditor::make('notes')
                                         ->label('Notes')
                                         ->columnSpan('full'),  // This makes the 'notes' field span the full width
                                 ]),
-                            Section::make('Financial Information')
+                            Forms\Components\Section::make('Financial Information')
                                 ->schema([
                                     // Display field for total_price
                                     Forms\Components\TextInput::make('total_price')
@@ -130,7 +141,7 @@ class BillResource extends Resource
                                         ->dehydrated(true)
                                         ->extraAttributes(['id' => 'total_price']),
                                     
-                                        Forms\Components\TextInput::make('bill_discount')
+                                    Forms\Components\TextInput::make('bill_discount')
                                         ->default(fn ($record) => $record ? $record->bill_discount : 0)
                                         ->prefix('Rs. ')
                                         ->live(onBlur: true)
@@ -149,10 +160,10 @@ class BillResource extends Resource
                         
                     Wizard\Step::make('Items Details')
                         ->schema([
-                            Repeater::make('items')
+                            Forms\Components\Repeater::make('items')
                                 ->relationship()
                                 ->schema([
-                                    Select::make('item_id')
+                                    Forms\Components\Select::make('item_id')
                                         ->label('Item Name')
                                         ->options(Item::query()->pluck('name', 'id'))
                                         ->searchable()
@@ -165,7 +176,7 @@ class BillResource extends Resource
                                         ->columnSpan([
                                             'md' => 5,
                                         ]),
-                                    TextInput::make('qty')
+                                    Forms\Components\TextInput::make('qty')
                                         ->label('Quantity')
                                         ->numeric()
                                         ->default(1)
@@ -190,21 +201,191 @@ class BillResource extends Resource
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('bill_date')
+                    ->label('Bill Date')
+                    ->date(),
+                TextColumn::make('number')
+                    ->label('Bill #')
+                    ->searchable(),
+                TextColumn::make('vendor.name')
+                    ->label('Vendor Name')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('total_price')
+                    ->label('Bill Amount')
+                    ->money('Rs. ')
+                    ->badge()
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('bill_discount')
+                    ->label('Bill Discount')
+                    ->money('Rs. ')
+                    ->badge()
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('final_price')
+                    ->label('Final Bill Amount')
+                    ->money('Rs. ')
+                    ->badge()
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                    // Example of a text filter for 'Status'
+                    SelectFilter::make('status')
+                        ->label('Status Filter')
+                        ->multiple()
+                        ->options(collect(BillStatus::cases())->mapWithKeys(fn ($case) => [$case->value => $case->getLabel()])),
+                    SelectFilter::make('vendors')
+                        ->label('Vendor Filter')
+                        ->relationship('vendor', 'name')
+                        ->searchable()
+                        ->preload(),
+                    Filter::make('bill_date_from')
+                        ->form([
+                            DatePicker::make('bill_date_from')
+                                ->label('Bill Date From')
+                                ->native(false)
+                                ->closeOnDateSelection(),
+                        ])
+                        ->query(function (Builder $query, array $data): Builder {
+                            return $query->when(
+                                $data['bill_date_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('bill_date', '>=', $date)
+                            );
+                        })
+                        ->indicateUsing(function (array $data): array {
+                            $indicators = [];
+                            if ($data['bill_date_from'] ?? null) {
+                                $indicators['bill_date_from'] = 'Bill Date From ' . Carbon::parse($data['bill_date_from'])->toFormattedDateString();
+                            }
+                            return $indicators;
+                        }),
+                    
+                    // Filter for bill_date_until
+                    Filter::make('bill_date_until')
+                        ->form([
+                            DatePicker::make('bill_date_until')
+                                ->label('Bill Date Until')
+                                ->native(false)
+                                ->closeOnDateSelection(),
+                        ])
+                        ->query(function (Builder $query, array $data): Builder {
+                            return $query->when(
+                                $data['bill_date_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('bill_date', '<=', $date)
+                            );
+                        })
+                        ->indicateUsing(function (array $data): array {
+                            $indicators = [];
+                            if ($data['bill_date_until'] ?? null) {
+                                $indicators['bill_date_until'] = 'Bill Date Until ' . Carbon::parse($data['bill_date_until'])->toFormattedDateString();
+                            }
+                            return $indicators;
+                        })
             ])
+            ->filtersLayout(FiltersLayout::AboveContent)
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
+ 
+    public static function infolist(Infolist $infolist): Infolist
+{
+    $statusColor = static::getStatusColor();
+
+    return $infolist
+        ->schema([
+        // ...
+        Grid::make([
+            'default' => 1,
+            'sm' => 2,
+            'md' => 3,
+            'lg' => 4,
+            'xl' => 6,
+            '2xl' => 8,
+        ])
+            ->schema([
+                // ...
+                Section::make([
+                        Split::make([
+                                    Section::make('Bill Information')
+                                        ->description('All about Bills')
+                                        ->columns(2)
+                                        ->schema([
+                                            TextEntry::make('bill_date')
+                                                ->label('Bill Date')
+                                                ->color('primary')
+                                                ->icon('heroicon-o-calendar-days')
+                                                ->iconColor('primary')
+                                                ->size(TextEntry\TextEntrySize::Large)
+                                                ->weight(FontWeight::Bold)
+                                                ->date(),
+                                            TextEntry::make('number')
+                                                ->label('Bill Number')
+                                                ->color('primary')
+                                                ->icon('heroicon-o-banknotes')
+                                                ->iconColor('primary')
+                                                ->size(TextEntry\TextEntrySize::Large)
+                                                ->weight(FontWeight::Bold),
+                                            TextEntry::make('vendor.name')
+                                                ->label('Vendor Name')
+                                                ->color('primary')
+                                                ->icon('heroicon-o-briefcase')
+                                                ->iconColor('primary')
+                                                ->size(TextEntry\TextEntrySize::Large)
+                                                ->weight(FontWeight::Bold),
+                                            TextEntry::make('status')
+                                                ->label('Bill Status')
+                                                ->color(function ($value) {
+                                                    return static::getStatusColor($value);
+                                                })
+                                                ->icon('heroicon-o-banknotes')
+                                                ->iconColor(function ($value) {
+                                                    return static::getStatusColor($value);
+                                                })
+                                                ->size(TextEntry\TextEntrySize::Large)
+                                                ->weight(FontWeight::Bold),
+                                        ])->grow(),
+                                    Section::make('Creation Information')
+                                        ->description('Bill Creation Dates')
+                                        ->columns(3)
+                                        ->columnSpan(['lg' => 1])
+                                        ->schema([
+                                            TextEntry::make('created_at')
+                                                ->dateTime(),
+                                            TextEntry::make('updated_at')
+                                                ->dateTime(),
+                                        ]),
+                    ])->from('md'),
+                Section::make('Rate limiting')
+                    ->description('Prevent abuse by limiting the number of requests per period')
+                    ->schema([
+                        // ...
+                    ])
+            ])
+        ])
+    ]);
+}
 
     public static function getRelations(): array
     {
@@ -263,5 +444,19 @@ class BillResource extends Resource
                 });
             JS,
         ]);
+    }
+
+    public static function getStatusColor($value = null)
+    {
+        switch ($value) {
+            case 'Pending':
+                return 'danger';
+            case 'Partial Paid':
+                return 'warning';
+            case 'Fully Paid':
+                return 'success';
+            default:
+                return 'primary';
+        }
     }
 }
