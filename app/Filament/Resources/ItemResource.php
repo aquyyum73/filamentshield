@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\ItemResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\ItemResource\RelationManagers;
+use Filament\Resources\RelationManagers\RelationManager;
 use Forms\Components\MarkdownEditor;
 
 class ItemResource extends Resource
@@ -23,7 +24,7 @@ class ItemResource extends Resource
     protected static ?string $recordRouteKeyName = 'slug';
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     protected static ?string $navigationGroup = 'Vendors';
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3;
 
     public static function getNavigationBadge(): ?string
     {
@@ -47,8 +48,8 @@ class ItemResource extends Resource
                     ->dehydrated()
                     ->required()
                     ->maxLength(191)
-                    ->unique(Vendor::class, 'slug', ignoreRecord: true),
-                Forms\Components\Select::make('vendors')
+                    ->unique(Item::class, 'slug', ignoreRecord: true),
+                Forms\Components\Select::make('vendor_id')
                     ->label('Vendor Name')
                     ->relationship('vendors', 'name')
                     ->multiple()
@@ -120,6 +121,7 @@ class ItemResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->deferLoading()
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),

@@ -35,6 +35,8 @@ use Filament\Forms\Components\MarkdownEditor;
 use App\Filament\Resources\BillResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\BillResource\RelationManagers;
+use App\Models\BillItem;
+use Filament\Infolists\Components\RepeatableEntry;
 
 class BillResource extends Resource
 {
@@ -44,7 +46,8 @@ class BillResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';
     protected static ?string $recordTitleAttribute = 'number';
     protected static ?string $navigationGroup = 'Vendors';
-    protected static ?string $navigationParentItem = 'Vendors';
+    protected static ?int $navigationSort = 2;
+    //protected static ?string $navigationParentItem = 'Vendors';
 
     public static function getNavigationBadge(): ?string
     {
@@ -183,14 +186,16 @@ class BillResource extends Resource
                                         ->columnSpan([
                                             'md' => 2,
                                         ])
-                                        ->required(),
+                                        ->required()
+                                        ->live(),
                                     Forms\Components\TextInput::make('price')
                                         ->label('Price')
                                         ->numeric()
                                         ->required()
                                         ->columnSpan([
                                             'md' => 3,
-                                        ]),
+                                        ])
+                                        ->live(),
                                 ]),
                         ]),
                 ])->columnSpan('full')
@@ -299,8 +304,8 @@ class BillResource extends Resource
             ])
             ->filtersLayout(FiltersLayout::AboveContent)
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
                     Tables\Actions\BulkActionGroup::make([
@@ -311,7 +316,6 @@ class BillResource extends Resource
  
     public static function infolist(Infolist $infolist): Infolist
 {
-    $statusColor = static::getStatusColor();
 
     return $infolist
         ->schema([
@@ -356,13 +360,6 @@ class BillResource extends Resource
                                                 ->weight(FontWeight::Bold),
                                             TextEntry::make('status')
                                                 ->label('Bill Status')
-                                                ->color(function ($value) {
-                                                    return static::getStatusColor($value);
-                                                })
-                                                ->icon('heroicon-o-banknotes')
-                                                ->iconColor(function ($value) {
-                                                    return static::getStatusColor($value);
-                                                })
                                                 ->size(TextEntry\TextEntrySize::Large)
                                                 ->weight(FontWeight::Bold),
                                         ])->grow(),
@@ -377,11 +374,54 @@ class BillResource extends Resource
                                                 ->dateTime(),
                                         ]),
                     ])->from('md'),
-                Section::make('Rate limiting')
-                    ->description('Prevent abuse by limiting the number of requests per period')
+                Section::make('Item Details')
+                    ->description('List of Items as per Vendor Bill')
+                    ->aside()
                     ->schema([
-                        // ...
-                    ])
+                        RepeatableEntry::make('items')
+                            ->schema([
+                                TextEntry::make('item_id')
+                                    ->label('Item Name')
+                                    ->color('primary')
+                                    ->state(function ($record) {
+                                        $item = Item::find($record->item_id);
+                                        return $item ? $item->name : '';
+                                    })
+                                    ->size(TextEntry\TextEntrySize::Large)
+                                    ->weight(FontWeight::Bold),
+                                TextEntry::make('qty'),
+                                TextEntry::make('price')
+                                    ->money('Rs. '),
+                                TextEntry::make('total_price')
+                                    ->state(function (BillItem $record): float {
+                                        return $record->qty * $record->price;
+                                    })
+                                    ->money('Rs. ')
+                                    ->weight(FontWeight::Bold),
+                            ])->columns(4)
+                                ]),
+                Section::make('Financial Details')
+                    ->description('Calculations as per Vendor Bill')
+                    ->schema([
+                                TextEntry::make('total_price')
+                                    ->label('Total Price')
+                                    ->money('Rs. '),
+                                TextEntry::make('bill_discount')
+                                    ->label('Bill Discoun')
+                                    ->money('Rs. '),
+                                TextEntry::make('final_price')
+                                    ->label('Final Price')
+                                    ->money('Rs. ')
+                                    ->size(TextEntry\TextEntrySize::Large)
+                                    ->weight(FontWeight::Bold)
+                                    ->color('primary'),
+                                TextEntry::make('paid_price')
+                                    ->label('Paid Amount')
+                                    ->money('Rs. '),
+                                TextEntry::make('balance_price')
+                                    ->label('Balance Amount')
+                                    ->money('Rs. '),
+                    ])->columns(5)
             ])
         ])
     ]);
@@ -444,19 +484,5 @@ class BillResource extends Resource
                 });
             JS,
         ]);
-    }
-
-    public static function getStatusColor($value = null)
-    {
-        switch ($value) {
-            case 'Pending':
-                return 'danger';
-            case 'Partial Paid':
-                return 'warning';
-            case 'Fully Paid':
-                return 'success';
-            default:
-                return 'primary';
-        }
     }
 }
