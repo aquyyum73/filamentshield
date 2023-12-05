@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Filament\Resources\VendorResource\Pages;
+namespace App\Filament\Resources\PaymentResource\Pages;
 
+use App\Filament\Resources\PaymentResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
-use App\Filament\Resources\VendorResource;
 
-class ViewVendor extends ViewRecord
+class ViewPayment extends ViewRecord
 {
-    protected static string $resource = VendorResource::class;
+    protected static string $resource = PaymentResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -16,6 +16,4 @@ class ViewVendor extends ViewRecord
             Actions\EditAction::make(),
         ];
     }
-
-
 }

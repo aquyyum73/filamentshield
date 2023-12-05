@@ -42,9 +42,15 @@ class Bill extends Model
     ];
 
     public function items(): HasMany
-{
-    return $this->hasMany(BillItem::class, 'bill_id');
-}
+    {
+        return $this->hasMany(BillItem::class, 'bill_id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
 
     public function vendor(): BelongsTo
     {
@@ -56,12 +62,10 @@ class Bill extends Model
         return $this->hasMany(BillItem::class);
     }
 
-    // public function calculateTotalPrice()
-    // {
-    //     return $this->billItems->sum(function ($item) {
-    //         return $item->qty * $item->price;
-    //     });
-    // }
+    public function totalBillAmount(): float
+    {
+        return $this->bills->sum('final_price');
+    }
 
     public function getTotalPriceAttribute()
     {

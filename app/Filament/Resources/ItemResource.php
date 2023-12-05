@@ -24,7 +24,7 @@ class ItemResource extends Resource
     protected static ?string $recordRouteKeyName = 'slug';
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
     protected static ?string $navigationGroup = 'Vendors';
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     public static function getNavigationBadge(): ?string
     {
@@ -98,23 +98,22 @@ class ItemResource extends Resource
                     ->label('Unit of Measurement'),
                 Forms\Components\TextInput::make('price')
                     ->numeric()
-                    ->prefix('Rs.'),
+                    ->prefix('Rs.')
+                    ->default(0),
                 Forms\Components\TextInput::make('qty')
-                    ->required()
                     ->numeric()
                     ->default(0),
                 Forms\Components\TextInput::make('reorderlevel')
                     ->label('Re-Order Level')
-                    ->required()
                     ->numeric()
                     ->default(0),
                 Forms\Components\TextInput::make('qtytoorder')
                     ->label('Quantity to Order')
-                    ->required()
                     ->numeric()
                     ->default(0),
                 Forms\Components\Toggle::make('is_active')
-                    ->required(),
+                    ->required()
+                    ->default(1),
             ]);
     }
 

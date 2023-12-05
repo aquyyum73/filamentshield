@@ -34,7 +34,7 @@ class Vendor extends Model
 
     public function items(): BelongsToMany
     {
-        return $this->belongsToMany(Item::class, 'vendor_id');
+        return $this->belongsToMany(Item::class);
     }
 
     public function totalBillAmount(): float
@@ -45,6 +45,11 @@ class Vendor extends Model
     public function bills(): HasMany
     {
         return $this->hasMany(Bill::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 
 }

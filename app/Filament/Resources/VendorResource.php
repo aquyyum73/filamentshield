@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Resources\VendorResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\VendorResource\RelationManagers;
+use App\Models\Bill;
+use Filament\Tables\Columns\Summarizers\Sum;
 
 class VendorResource extends Resource
 {
@@ -94,6 +96,8 @@ class VendorResource extends Resource
                     ->searchable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean(),
+                Tables\Columns\TextColumn::make('bills.final_price')
+                    ->label('Final Price'),
                 Tables\Columns\TextColumn::make('notes')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -126,7 +130,7 @@ class VendorResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\VendorResource\BillsRelationManager::class,
         ];
     }
 
