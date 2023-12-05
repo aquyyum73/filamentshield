@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use Filament\Forms;
+use App\Models\Bill;
 use Filament\Tables;
 use App\Models\Vendor;
 use Filament\Forms\Form;
@@ -11,11 +12,11 @@ use Illuminate\Support\Str;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Columns\Summarizers\Sum;
 use App\Filament\Resources\VendorResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\VendorResource\RelationManagers;
-use App\Models\Bill;
-use Filament\Tables\Columns\Summarizers\Sum;
+use App\Filament\Resources\VendorResource\RelationManagers\BillsRelationManager;
 
 class VendorResource extends Resource
 {
@@ -87,17 +88,19 @@ class VendorResource extends Resource
                     ->label('Contact Person')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('mobile')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('phone')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('address')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('is_active')
-                    ->boolean(),
-                Tables\Columns\TextColumn::make('bills.final_price')
-                    ->label('Final Price'),
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('notes')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -114,9 +117,9 @@ class VendorResource extends Resource
                 //Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\ViewAction::make(),
+                    Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                     Tables\Actions\BulkActionGroup::make([
@@ -130,7 +133,7 @@ class VendorResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\VendorResource\BillsRelationManager::class,
+            BillsRelationManager::class,
         ];
     }
 

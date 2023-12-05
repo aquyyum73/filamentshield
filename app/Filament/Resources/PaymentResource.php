@@ -2,16 +2,20 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\PaymentResource\Pages;
-use App\Filament\Resources\PaymentResource\RelationManagers;
-use App\Models\Payment;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\Bill;
 use Filament\Tables;
+use App\Models\Payment;
+use Filament\Forms\Get;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Filament\Resources\Resource;
+use Illuminate\Support\Collection;
+use Filament\Forms\Components\DatePicker;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Resources\PaymentResource\Pages;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use App\Filament\Resources\PaymentResource\RelationManagers;
 
 class PaymentResource extends Resource
 {
@@ -32,16 +36,48 @@ class PaymentResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Select::make('vendor_id')
-                    ->relationship('vendor', 'name'),
+                    ->relationship('vendor', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->live(),
                 Forms\Components\Select::make('bill_id')
                 ->label('Select a vendor first')
-                ->disabled()
+                // ->options(fn (Get $get): Collection => Bill::query()->where('vendor_id', $get('vendor_id'))->pluck('number','id'))
+                ->options(function (Get $get): Collection {
+                    $vendorId = $get('vendor_id');
+                    
+                    // Use where clause to filter bills based on vendor_id
+                    $bills = Bill::query()->where('vendor_id', $vendorId)->get();
+
+                    // Map bills to key-value pairs for the select options
+                    $options = $bills->mapWithKeys(function ($bill) {
+                        return [
+                            $bill->id => sprintf(
+                                '%s - Rs. %s - %s',
+                                $bill->number,
+                                number_format($bill->final_price, 2),
+                                $bill->bill_date
+                            ),
+                        ];
+                    });
+
+                    return $options;
+                })
                 ->required(),
                 Forms\Components\TextInput::make('number')
+                ->label('Payment Number')
+                ->default(function () {
+                return 'PAYMENT-' . now()->format('M-Y') . '-' . random_int(100000, 999999);
+                })
+                    ->disabled()
+                    ->dehydrated()
                     ->required()
-                    ->maxLength(32),
+                    ->maxLength(32)
+                    ->unique(Bill::class, 'number', ignoreRecord: true),
                 Forms\Components\DatePicker::make('payment_date')
-                    ->required(),
+                    ->native(false)
+                    ->displayFormat('d-M-Y')
+                    ->closeOnDateSelection(),
                 Forms\Components\TextInput::make('paid_amount')
                     ->numeric(),
                 Forms\Components\TextInput::make('mode')
@@ -50,28 +86,7 @@ class PaymentResource extends Resource
                 Forms\Components\Textarea::make('notes')
                     ->maxLength(65535)
                     ->columnSpanFull(),
-            ])
-            ->script(<<<'SCRIPT'
-                        (function () {
-                            const vendorField = Filament.getFormField('vendor_id');
-                            const billField = Filament.getFormField('bill_id');
-
-                            vendorField.addEventListener('change', async function () {
-                                const vendorId = vendorField.value;
-
-                                if (!vendorId) {
-                                    return;
-                                }
-
-                                const response = await fetch(`/api/bills?vendor_id=${vendorId}`);
-                                const bills = await response.json();
-
-                                const options = bills.map((bill) => ({ value: bill.id, label: bill.id }));
-                                billField.setOptions(options);
-                                billField.enable();
-                            });
-                        })();
-            SCRIPT);
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -147,4 +162,17 @@ class PaymentResource extends Resource
                 SoftDeletingScope::class,
             ]);
     }
+
+    protected static function getBillOptions($vendorId): array
+{
+    // Fetch bills based on $vendorId using your logic
+    $bills = Bill::getBillsByVendor($vendorId);
+
+    // Format bills as options for the select component
+    $options = collect($bills)->mapWithKeys(function ($bill) {
+        return [$bill->id => $bill->number];
+    })->toArray();
+
+    return $options;
+}
 }
