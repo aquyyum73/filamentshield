@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use Filament\Forms;
 use App\Models\Bill;
+use App\Models\PaymentTerm;
 use Filament\Tables;
 use App\Models\Vendor;
 use Filament\Forms\Form;
@@ -69,6 +70,11 @@ class VendorResource extends Resource
                     ->maxLength(191),
                 Forms\Components\Toggle::make('is_active')
                     ->required(),
+                Forms\Components\Select::make('payment_terms_id')
+                    ->label('Payment Term')
+                    ->relationship('payment_terms', 'name')
+                    ->searchable()
+                    ->preload(true),
                 Forms\Components\MarkdownEditor::make('notes')
                     ->required()
                     ->maxLength(16777215)

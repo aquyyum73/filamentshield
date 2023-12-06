@@ -30,6 +30,7 @@ class Bill extends Model
         'number',
         'total_price',
         'bill_date',
+        'due_date',
         'total_price',
         'bill_discount',
         'final_price',

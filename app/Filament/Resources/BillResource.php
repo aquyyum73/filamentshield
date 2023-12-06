@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\BillResource\RelationManagers;
 use App\Models\BillItem;
 use Filament\Infolists\Components\RepeatableEntry;
+use Illuminate\Support\Facades\DB;
 
 class BillResource extends Resource
 {
@@ -119,6 +120,10 @@ class BillResource extends Resource
                                                 ->columnSpanFull(),
                                         ]),
                                     Forms\Components\DatePicker::make('bill_date')
+                                        ->native(false)
+                                        ->displayFormat('d-M-Y')
+                                        ->closeOnDateSelection(),
+                                    Forms\Components\DatePicker::make('due_date')
                                         ->native(false)
                                         ->displayFormat('d-M-Y')
                                         ->closeOnDateSelection(),
@@ -216,6 +221,9 @@ class BillResource extends Resource
                     ->label('Vendor Name')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('due_date')
+                    ->label('Bill Date')
+                    ->date(),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -239,6 +247,12 @@ class BillResource extends Resource
                     ->badge()
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('total_payments')
+                    ->label('Total Payments')
+                    ->badge()
+                    ->default(function ($record) {
+                        return 'Rs. ' . number_format(DB::table('payments')->where('bill_id', $record->id)->sum('paid_amount'));
+                    }),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

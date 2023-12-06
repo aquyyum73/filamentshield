@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('vendors', function (Blueprint $table) {
-            $table->decimal('total_final_price', 10, 2)->default(0)->after('id');
+        Schema::table('bills', function (Blueprint $table) {
+            $table->date('due_date')->nullable();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('vendors', function (Blueprint $table) {
-            $table->dropColumn('total_final_price');
+        Schema::table('bills', function (Blueprint $table) {
+            $table->dropColumn('due_date');
         });
     }
 };

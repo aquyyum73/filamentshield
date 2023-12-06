@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('vendors', function (Blueprint $table) {
-            $table->decimal('total_final_price', 10, 2)->default(0)->after('id');
+        Schema::create('payment_terms', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique()->nullable();
+            $table->foreignId('vendor_id')->nullable()->constrained()->nullOnDelete();
+            $table->timestamps();
         });
     }
 
@@ -21,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('vendors', function (Blueprint $table) {
-            $table->dropColumn('total_final_price');
-        });
+        Schema::dropIfExists('payment_terms');
     }
 };

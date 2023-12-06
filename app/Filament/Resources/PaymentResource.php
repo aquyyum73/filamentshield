@@ -41,8 +41,7 @@ class PaymentResource extends Resource
                     ->preload()
                     ->live(),
                 Forms\Components\Select::make('bill_id')
-                ->label('Select a vendor first')
-                // ->options(fn (Get $get): Collection => Bill::query()->where('vendor_id', $get('vendor_id'))->pluck('number','id'))
+                ->label('Select a Vendor Name First')
                 ->options(function (Get $get): Collection {
                     $vendorId = $get('vendor_id');
                     
@@ -55,7 +54,7 @@ class PaymentResource extends Resource
                             $bill->id => sprintf(
                                 '%s - Rs. %s - %s',
                                 $bill->number,
-                                number_format($bill->final_price, 2),
+                                number_format($bill->final_price),
                                 $bill->bill_date
                             ),
                         ];
