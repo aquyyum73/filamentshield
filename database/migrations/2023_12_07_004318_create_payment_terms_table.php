@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique()->nullable();
-            $table->foreignId('vendor_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('vendor_id')->nullable()->constrained();
             $table->timestamps();
         });
     }

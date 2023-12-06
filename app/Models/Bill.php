@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use App\Enums\BillStatus;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
@@ -102,6 +103,37 @@ class Bill extends Model
             // Assuming total_price and bill_discount are already set
             $model->final_price = $model->total_price - $model->bill_discount;
         });
+    }
+
+    public static function getPaymentTermsForVendor($vendorId)
+    {
+        $vendor = Vendor::find($vendorId);
+
+        if ($vendor) {
+            $paymentTerms = $vendor->payment_terms;
+
+            // If a vendor can have multiple payment terms, return an array of payment term IDs
+            return $paymentTerms->pluck('id')->toArray();
+        }
+
+        return null;
+    }
+
+
+    public static function calculateDueDate($paymentTermsId, $billDate)
+    {
+        // Add logic to calculate due_date based on payment_terms_id
+        switch ($paymentTermsId) {
+            case 'due_on_receipt':
+                return $billDate;
+            case 'weekly':
+                return Carbon::parse($billDate)->addWeek();
+            case 'monthly':
+                return Carbon::parse($billDate)->addMonth();
+            default:
+                // Handle other cases or provide a default value
+                return $billDate;
+        }
     }
 
 }

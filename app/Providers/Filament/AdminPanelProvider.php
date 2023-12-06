@@ -33,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('')
             ->login()
             ->profile(EditProfile::class)
-            ->brandName('Filament Shield')
+            ->brandName('Blue Rose Sol')
             ->breadcrumbs(false)
             ->colors([
                 'primary' => Color::Indigo,

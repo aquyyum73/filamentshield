@@ -88,8 +88,7 @@ class VendorResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('slug')
-                    ->searchable(),
+                
                 Tables\Columns\TextColumn::make('personel')
                     ->label('Contact Person')
                     ->searchable(),
@@ -98,6 +97,8 @@ class VendorResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('mobile')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('payment_terms.name')
+                    ->badge(),
                 Tables\Columns\TextColumn::make('phone')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),

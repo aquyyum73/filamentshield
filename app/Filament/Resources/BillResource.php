@@ -7,14 +7,18 @@ use Filament\Forms;
 use App\Models\Bill;
 use App\Models\Item;
 use Filament\Tables;
+use App\Models\Vendor;
+use App\Models\BillItem;
 use Filament\Forms\Form;
 use App\Enums\BillStatus;
 use Filament\Tables\Table;
+use App\Models\PaymentTerm;
 use Illuminate\Support\Str;
 use Filament\Facades\Filament;
 use Illuminate\Support\Carbon;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
+use Illuminate\Support\Facades\DB;
 use Filament\Tables\Filters\Filter;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Wizard;
@@ -33,11 +37,9 @@ use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Forms\Components\MarkdownEditor;
 use App\Filament\Resources\BillResource\Pages;
+use Filament\Infolists\Components\RepeatableEntry;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\BillResource\RelationManagers;
-use App\Models\BillItem;
-use Filament\Infolists\Components\RepeatableEntry;
-use Illuminate\Support\Facades\DB;
 
 class BillResource extends Resource
 {
@@ -118,15 +120,51 @@ class BillResource extends Resource
                                                 ->required()
                                                 ->maxLength(16777215)
                                                 ->columnSpanFull(),
-                                        ]),
+                                            ])
+                                            ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
+                                                // Ensure $state is an array
+                                                if (is_array($state)) {
+                                                    // Assuming you have a method to get payment_terms based on vendor_id
+                                                    $paymentTerms = self::getPaymentTermsForVendor($state['vendor_id']);
+                                                    
+                                                    // Set the payment_terms_id in the form
+                                                    $set([
+                                                        'payment_terms_id' => $paymentTerms[0] ?? null, // Choose the first payment term ID or null if none
+                                                    ]);
+                                                }
+                                            }),
+                                            Forms\Components\TextInput::make('payment_terms_id')
+                                                ->label('Payment Terms')
+                                                ->disabled()
+                                                ->dehydrated(),
                                     Forms\Components\DatePicker::make('bill_date')
                                         ->native(false)
                                         ->displayFormat('d-M-Y')
                                         ->closeOnDateSelection(),
-                                    Forms\Components\DatePicker::make('due_date')
-                                        ->native(false)
-                                        ->displayFormat('d-M-Y')
-                                        ->closeOnDateSelection(),
+                                        // ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
+                                        //     // Declare $paymentTermsId outside the if block
+                                        //     $paymentTermsId = null;
+                                        
+                                        //     // Ensure $state is an array
+                                        //     if (is_array($state)) {
+                                        //         // Assuming you have a method to get payment_terms_id based on vendor_id
+                                        //         $paymentTermsId = self::getPaymentTermsIdForVendor($state['vendor_id']);
+                                        
+                                        //         // Set the payment_terms_id in the form
+                                        //         $set('payment_terms_id', $paymentTermsId);
+                                        //     }
+                                        
+                                        //     // Implement your logic here to calculate due_date
+                                        //     $dueDate = self::calculateDueDate($paymentTermsId, $state['bill_date']);
+                                        
+                                        //     // Set the calculated due_date
+                                        //     $set('due_date', $dueDate);
+                                        // }),
+                                            Forms\Components\DatePicker::make('due_date')
+                                                ->displayFormat('d-M-Y')
+                                                ->disabled()
+                                                ->dehydrated()
+                                                ->native(false),
                                     Forms\Components\Select::make('status')
                                         ->options(BillStatus::toSelectArray())
                                         ->required()
@@ -164,7 +202,7 @@ class BillResource extends Resource
                                         ->dehydrated(true)
                                         ->extraAttributes(['id' => 'final_price']),
                                 ])->columns(3),
-                        ]),
+                                ]),
                         
                     Wizard\Step::make('Items Details')
                         ->schema([
