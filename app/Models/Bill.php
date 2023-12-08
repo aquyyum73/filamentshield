@@ -106,18 +106,23 @@ class Bill extends Model
     }
 
     public static function getPaymentTermsForVendor($vendorId)
-    {
-        $vendor = Vendor::find($vendorId);
+{
+    $vendor = Vendor::find($vendorId);
 
-        if ($vendor) {
-            $paymentTerms = $vendor->payment_terms;
+    if ($vendor) {
+        $paymentTerms = $vendor->payment_terms;
 
-            // If a vendor can have multiple payment terms, return an array of payment term IDs
-            return $paymentTerms->pluck('id')->toArray();
+        // If a vendor can have multiple payment terms, return the collection
+        if ($paymentTerms->count() > 1) {
+            return $paymentTerms;
         }
 
-        return null;
+        // If a vendor can have only one payment term, return the first payment term
+        return $paymentTerms->first();
     }
+
+    return null;
+}
 
 
     public static function calculateDueDate($paymentTermsId, $billDate)

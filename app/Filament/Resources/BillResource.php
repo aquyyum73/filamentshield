@@ -76,7 +76,6 @@ class BillResource extends Resource
                                         ->required()
                                         ->maxLength(32)
                                         ->unique(Bill::class, 'number', ignoreRecord: true),
-
                                     Forms\Components\Select::make('vendor_id')
                                         ->label('Vendor Name')
                                         ->relationship('vendor', 'name')
@@ -127,16 +126,19 @@ class BillResource extends Resource
                                                     // Assuming you have a method to get payment_terms based on vendor_id
                                                     $paymentTerms = self::getPaymentTermsForVendor($state['vendor_id']);
                                                     
-                                                    // Set the payment_terms_id in the form
+                                                    // Set the payment_terms_id and payment_terms_name in the form
                                                     $set([
                                                         'payment_terms_id' => $paymentTerms[0] ?? null, // Choose the first payment term ID or null if none
+                                                        'payment_terms_name' => PaymentTerm::whereIn('id', $paymentTerms)->pluck('name')->first(),
                                                     ]);
                                                 }
+                                                // // Show the payment terms input field
+                                                // $set(['payment_terms_id' => null]);
                                             }),
                                             Forms\Components\TextInput::make('payment_terms_id')
                                                 ->label('Payment Terms')
-                                                ->disabled()
-                                                ->dehydrated(),
+                                                ->disabled(),
+                                                // ->dehydrated()
                                     Forms\Components\DatePicker::make('bill_date')
                                         ->native(false)
                                         ->displayFormat('d-M-Y')
