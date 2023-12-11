@@ -104,41 +104,4 @@ class Bill extends Model
             $model->final_price = $model->total_price - $model->bill_discount;
         });
     }
-
-    public static function getPaymentTermsForVendor($vendorId)
-{
-    $vendor = Vendor::find($vendorId);
-
-    if ($vendor) {
-        $paymentTerms = $vendor->payment_terms;
-
-        // If a vendor can have multiple payment terms, return the collection
-        if ($paymentTerms->count() > 1) {
-            return $paymentTerms;
-        }
-
-        // If a vendor can have only one payment term, return the first payment term
-        return $paymentTerms->first();
-    }
-
-    return null;
-}
-
-
-    public static function calculateDueDate($paymentTermsId, $billDate)
-    {
-        // Add logic to calculate due_date based on payment_terms_id
-        switch ($paymentTermsId) {
-            case 'due_on_receipt':
-                return $billDate;
-            case 'weekly':
-                return Carbon::parse($billDate)->addWeek();
-            case 'monthly':
-                return Carbon::parse($billDate)->addMonth();
-            default:
-                // Handle other cases or provide a default value
-                return $billDate;
-        }
-    }
-
 }

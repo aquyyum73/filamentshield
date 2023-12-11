@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use layout;
 use Filament\Forms;
+use Filament\Forms\Set;
 use App\Models\Bill;
 use App\Models\Item;
 use Filament\Tables;
@@ -15,7 +16,6 @@ use Filament\Tables\Table;
 use App\Models\PaymentTerm;
 use Illuminate\Support\Str;
 use Filament\Facades\Filament;
-use Illuminate\Support\Carbon;
 use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +40,8 @@ use App\Filament\Resources\BillResource\Pages;
 use Filament\Infolists\Components\RepeatableEntry;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\BillResource\RelationManagers;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Debug\Dumper;
 
 class BillResource extends Resource
 {
@@ -61,10 +63,7 @@ class BillResource extends Resource
     {
         return $form
             ->schema([
-                Wizard::make([
-                    Wizard\Step::make('Bill Details')
-                        ->schema([
-                            Forms\Components\Section::make('Bill Information')
+                Forms\Components\Section::make('Bill Information')
                                 ->schema([
                                     Forms\Components\TextInput::make('number')
                                         ->label('Bill Number')
@@ -120,53 +119,52 @@ class BillResource extends Resource
                                                 ->maxLength(16777215)
                                                 ->columnSpanFull(),
                                             ])
+                                            ->live()
                                             ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
-                                                // Ensure $state is an array
-                                                if (is_array($state)) {
-                                                    // Assuming you have a method to get payment_terms based on vendor_id
-                                                    $paymentTerms = self::getPaymentTermsForVendor($state['vendor_id']);
-                                                    
-                                                    // Set the payment_terms_id and payment_terms_name in the form
-                                                    $set([
-                                                        'payment_terms_id' => $paymentTerms[0] ?? null, // Choose the first payment term ID or null if none
-                                                        'payment_terms_name' => PaymentTerm::whereIn('id', $paymentTerms)->pluck('name')->first(),
-                                                    ]);
+                                                if ($state) {
+                                                    $vendor = \App\Models\Vendor::find($state);
+                                                    if ($vendor) {
+                                                        $paymentTerm = $vendor->payment_terms;
+                                                        $set('payment_terms_name', optional($paymentTerm)->name);
+                                                    } else {
+                                                        $set('payment_terms_name', null);
+                                                    }
                                                 }
-                                                // // Show the payment terms input field
-                                                // $set(['payment_terms_id' => null]);
                                             }),
-                                            Forms\Components\TextInput::make('payment_terms_id')
-                                                ->label('Payment Terms')
-                                                ->disabled(),
-                                                // ->dehydrated()
-                                    Forms\Components\DatePicker::make('bill_date')
-                                        ->native(false)
-                                        ->displayFormat('d-M-Y')
-                                        ->closeOnDateSelection(),
-                                        // ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
-                                        //     // Declare $paymentTermsId outside the if block
-                                        //     $paymentTermsId = null;
+                                        Forms\Components\TextInput::make('payment_terms_name')
+                                            ->label('Payment Terms')
+                                            ->disabled(),
+                                            Forms\Components\DatePicker::make('bill_date')
+                                            ->native(false)
+                                            ->displayFormat('d-M-Y')
+                                            ->closeOnDateSelection()
+                                            ->live()
+                                            ->afterStateUpdated(function (Set $set, ?string $state) {
+                                                if (isset($state['vendor_id']) && $state['bill_date']) {
+                                                    $vendor = \App\Models\Vendor::find($state['vendor_id']);
+                                                    $paymentTermName = optional($vendor)->payment_terms->name; // Get the name of the payment term
                                         
-                                        //     // Ensure $state is an array
-                                        //     if (is_array($state)) {
-                                        //         // Assuming you have a method to get payment_terms_id based on vendor_id
-                                        //         $paymentTermsId = self::getPaymentTermsIdForVendor($state['vendor_id']);
+                                                    if ($paymentTermName === 'Weekly') {
+                                                        $dueDate = Carbon::parse($state['bill_date'])->addDays(7);
+                                                    } elseif ($paymentTermName === 'Monthly') {
+                                                        $dueDate = Carbon::parse($state['bill_date'])->endOfMonth();
+                                                    } elseif ($paymentTermName === 'Due on Receipt') {
+                                                        $dueDate = Carbon::parse($state['bill_date']);
+                                                    } elseif ($paymentTermName === 'Fortnightly') {
+                                                        $billDate = Carbon::parse($state['bill_date']);
+                                                        $dueDate = $billDate->addDays($billDate->day > 16 ? $billDate->daysUntil($billDate->endOfMonth())->days() : 15);
+                                                    } else {
+                                                        $dueDate = null;
+                                                    }
                                         
-                                        //         // Set the payment_terms_id in the form
-                                        //         $set('payment_terms_id', $paymentTermsId);
-                                        //     }
+                                                    $set('due_date', $dueDate ? $dueDate->format('d-M-Y') : null);
+                                                }
+                                            }),
                                         
-                                        //     // Implement your logic here to calculate due_date
-                                        //     $dueDate = self::calculateDueDate($paymentTermsId, $state['bill_date']);
-                                        
-                                        //     // Set the calculated due_date
-                                        //     $set('due_date', $dueDate);
-                                        // }),
-                                            Forms\Components\DatePicker::make('due_date')
-                                                ->displayFormat('d-M-Y')
-                                                ->disabled()
-                                                ->dehydrated()
-                                                ->native(false),
+                                        Forms\Components\TextInput::make('due_date')
+                                            //->native(false)
+                                            ->disabled()
+                                            ->dehydrated(false),
                                     Forms\Components\Select::make('status')
                                         ->options(BillStatus::toSelectArray())
                                         ->required()
@@ -178,37 +176,7 @@ class BillResource extends Resource
                                         ->label('Notes')
                                         ->columnSpan('full'),  // This makes the 'notes' field span the full width
                                 ]),
-                            Forms\Components\Section::make('Financial Information')
-                                ->schema([
-                                    // Display field for total_price
-                                    Forms\Components\TextInput::make('total_price')
-                                        ->disabled()
-                                        ->live(onBlur: true)
-                                        ->default(fn ($record) => $record ? $record->total_price : 0)
-                                        ->prefix('Rs. ')
-                                        ->dehydrated(true)
-                                        ->extraAttributes(['id' => 'total_price']),
-                                    
-                                    Forms\Components\TextInput::make('bill_discount')
-                                        ->default(fn ($record) => $record ? $record->bill_discount : 0)
-                                        ->prefix('Rs. ')
-                                        ->live(onBlur: true)
-                                        ->extraAttributes(['id' => 'bill_discount']),
-
-                                    Forms\Components\TextInput::make('final_price')
-                                        ->disabled()
-                                        ->live(onBlur: true)
-                                        ->default(fn ($record) => $record ? $record->final_price : 0)
-                                        ->prefix('Rs. ')
-                                        ->inputMode('decimal')
-                                        ->dehydrated(true)
-                                        ->extraAttributes(['id' => 'final_price']),
-                                ])->columns(3),
-                                ]),
-                        
-                    Wizard\Step::make('Items Details')
-                        ->schema([
-                            Forms\Components\Repeater::make('items')
+                                Forms\Components\Repeater::make('items')
                                 ->relationship()
                                 ->schema([
                                     Forms\Components\Select::make('item_id')
@@ -241,10 +209,38 @@ class BillResource extends Resource
                                             'md' => 3,
                                         ])
                                         ->live(),
-                                ]),
-                        ]),
-                ])->columnSpan('full')
-            ]);
+                                        Forms\Components\TextInput::make('item_total_price')
+                                        ->label('Item Total Price')
+                                        ->numeric()
+                                        ->live(),
+                                    ]),
+                            Forms\Components\Section::make('Financial Information')
+                                ->schema([
+                                    // Display field for total_price
+                                    Forms\Components\TextInput::make('total_price')
+                                        ->disabled()
+                                        ->live()
+                                        ->default(fn ($record) => $record ? $record->total_price : 0)
+                                        ->prefix('Rs. ')
+                                        ->dehydrated(true)
+                                        ->extraAttributes(['id' => 'total_price']),
+                                    
+                                    Forms\Components\TextInput::make('bill_discount')
+                                        ->default(fn ($record) => $record ? $record->bill_discount : 0)
+                                        ->prefix('Rs. ')
+                                        ->live()
+                                        ->extraAttributes(['id' => 'bill_discount']),
+
+                                    Forms\Components\TextInput::make('final_price')
+                                        ->disabled()
+                                        ->live()
+                                        ->default(fn ($record) => $record ? $record->final_price : 0)
+                                        ->prefix('Rs. ')
+                                        ->inputMode('decimal')
+                                        ->dehydrated(true)
+                                        ->extraAttributes(['id' => 'final_price']),
+                                ])->columns(3),
+                                ]);
     }
 
     public static function table(Table $table): Table
@@ -261,7 +257,7 @@ class BillResource extends Resource
                     ->label('Vendor Name')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('due_date')
+                TextColumn::make('bill_date')
                     ->label('Bill Date')
                     ->date(),
                 TextColumn::make('status')
@@ -539,4 +535,29 @@ class BillResource extends Resource
             JS,
         ]);
     }
+
+    // protected function calculateDueDate($billDate, $paymentTermName)
+    // {
+    //     $dueDate = Carbon::parse($billDate);
+
+    //     switch ($paymentTermName) {
+    //         case 'Weekly':
+    //             $dueDate->addDays(7);
+    //             break;
+    //         case 'Monthly':
+    //             $dueDate->addDays(30);
+    //             break;
+    //         case 'Due on Receipt':
+    //             // No additional days for due on receipt
+    //             break;
+    //         case 'Fortnightly':
+    //             $dueDate->addDays(15);
+    //             break;
+    //         default:
+    //             $dueDate = null;
+    //             break;
+    //     }
+
+    //     return $dueDate ? $dueDate->format('d-M-Y') : null;
+    // }
 }

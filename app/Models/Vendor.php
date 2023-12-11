@@ -58,4 +58,5 @@ class Vendor extends Model
         return $this->belongsTo(PaymentTerm::class);
     }
 
+
 }

@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class PaymentTerm extends Model
 {
@@ -25,8 +26,8 @@ class PaymentTerm extends Model
     ];
 
     
-    public function vendor(): BelongsTo
+    public function vendor(): BelongsToMany
     {
-        return $this->belongsTo(Vendor::class);
+        return $this->belongsToMany(Vendor::class);
     }
 }
