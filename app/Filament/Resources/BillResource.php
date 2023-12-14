@@ -122,17 +122,12 @@ class BillResource extends Resource
                                             ->live()
                                             ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
                                                 if ($state) {
-                                                    $vendor = Vendor::find($state);
+                                                    $vendor = \App\Models\Vendor::find($state);
                                                     if ($vendor) {
                                                         $paymentTerm = $vendor->payment_terms;
                                                         $set('payment_terms_name', optional($paymentTerm)->name);
-                                        
-                                                        // Trigger calculation for due_date based on current bill_date
-                                                        $billDate = request()->input('bill_date');
-                                                        $set('due_date', $this->calculateDueDate(optional($paymentTerm)->name, $billDate));
                                                     } else {
                                                         $set('payment_terms_name', null);
-                                                        $set('due_date', null);
                                                     }
                                                 }
                                             }),
@@ -143,12 +138,33 @@ class BillResource extends Resource
                                             ->native(false)
                                             ->displayFormat('d-M-Y')
                                             ->closeOnDateSelection()
-                                            ->reactive()
-                                            ->afterStateUpdated(fn ($state, Forms\Set $set) => [
-                                                'due_date' => $this->calculateDueDate(request()->input('payment_terms_name'), $state)
-                                            ]),
+                                            ->live()
+                                            ->afterStateUpdated(function (Set $set, ?string $state) {
+                                                if (isset($state['vendor_id']) && $state['bill_date']) {
+                                                    $vendor = \App\Models\Vendor::find($state['vendor_id']);
+                                                    $paymentTermName = optional($vendor)->payment_terms->name; // Get the name of the payment term
+                                        
+                                                    if ($paymentTermName === 'Weekly') {
+                                                        $dueDate = Carbon::parse($state['bill_date'])->addDays(7);
+                                                    } elseif ($paymentTermName === 'Monthly') {
+                                                        $dueDate = Carbon::parse($state['bill_date'])->endOfMonth();
+                                                    } elseif ($paymentTermName === 'Due on Receipt') {
+                                                        $dueDate = Carbon::parse($state['bill_date']);
+                                                    } elseif ($paymentTermName === 'Fortnightly') {
+                                                        $billDate = Carbon::parse($state['bill_date']);
+                                                        $dueDate = $billDate->addDays($billDate->day > 16 ? $billDate->daysUntil($billDate->endOfMonth())->days() : 15);
+                                                    } else {
+                                                        $dueDate = null;
+                                                    }
+                                        
+                                                    $set('due_date', $dueDate ? $dueDate->format('d-M-Y') : null);
+                                                }
+                                            }),
+                                        
                                         Forms\Components\TextInput::make('due_date')
-                                            ->disabled(),
+                                            //->native(false)
+                                            ->disabled()
+                                            ->dehydrated(false),
                                     Forms\Components\Select::make('status')
                                         ->options(BillStatus::toSelectArray())
                                         ->required()
@@ -340,6 +356,7 @@ class BillResource extends Resource
             ->actions([
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
+                    Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                     Tables\Actions\BulkActionGroup::make([
@@ -519,4 +536,29 @@ class BillResource extends Resource
             JS,
         ]);
     }
+
+    // protected function calculateDueDate($billDate, $paymentTermName)
+    // {
+    //     $dueDate = Carbon::parse($billDate);
+
+    //     switch ($paymentTermName) {
+    //         case 'Weekly':
+    //             $dueDate->addDays(7);
+    //             break;
+    //         case 'Monthly':
+    //             $dueDate->addDays(30);
+    //             break;
+    //         case 'Due on Receipt':
+    //             // No additional days for due on receipt
+    //             break;
+    //         case 'Fortnightly':
+    //             $dueDate->addDays(15);
+    //             break;
+    //         default:
+    //             $dueDate = null;
+    //             break;
+    //     }
+
+    //     return $dueDate ? $dueDate->format('d-M-Y') : null;
+    // }
 }
