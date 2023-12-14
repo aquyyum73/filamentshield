@@ -6,6 +6,7 @@ use App\Filament\Resources\BillResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
+
 class EditBill extends EditRecord
 {
     protected static string $resource = BillResource::class;
